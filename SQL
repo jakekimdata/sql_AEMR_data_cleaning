@@ -1,0 +1,46 @@
+#Case Study: The American Energy Market Regulator (AEMR) is responsible for looking after the US domestic energy network. Recently, the AEMR management team has been
+noticing large number of energy providers that submitted outages over the 2016 and 2017. We will explore and clean the data to examine two main areas of concer: 1. energy
+stability and Market Outages and 2. energy losses and market reliability. 
+
+#started by examining most common outage types, duartion and frequency
+
+SELECT COUNT(Status) AS Total_Number_Outages, Status, Outage_Reason, Year
+FROM AEMR_Outage_Table
+Where Status = 'Approved'
+AND YEAR = 2016
+Group BY Outage_Reason
+Order BY Outage_Reason;
+
+-monthly trends to see if there are any issues in particular months over other months
+SELECT Year, Month, COUNT(Status) AS Total_Number_Outages
+FROM AEMR_Outage_Table
+Where Status = 'Approved'
+AND YEAR IN (2016, 2017)
+Group BY Year, Month
+Order BY Year, Month;
+
+-monthly trends showed rapidly increasing from 2016 to 2017. lets examine frequency and duration
+SELECT Participant_Code, Outage_Reason, Year, COUNT(Status) AS Total_Number_Outage_Events, 
+ROUND(AVG(ABS(JULIANDAY(End_Time)-JULIANDAY(Start_Time))),2) AS Average_Outage_Duration_In_Days
+FROM AEMR_Outage_Table
+WHERE Status = 'Approved'
+AND Year IN (2016, 2017)
+GROUP BY Outage_Reason, Participant_Code, Year
+ORDER BY Total_Number_Outage_Events Desc, Outage_Reason;
+
+WITH Avg_Outage_Table AS (
+    SELECT Participant_Code, Outage_Reason, Year, Count(Status) AS Total_Number_Outage_Events,
+        ROUND(AVG(ABS(JULIANDAY(End_Time)-JULIANDAY(Start_Time))),2) AS Average_Outage_Duration_In_Days
+    FROM AEMR_Outage_Table
+    WHERE Status = 'Approved'
+    AND Year IN (2016, 2017)
+    GROUP BY Outage_Reason, Participant_Code, Year)
+SELECT Participant_Code, Outage_Reason, Year, Total_Number_Outage_Events, Average_Outage_Duration_In_Days,
+    CASE 
+        WHEN Average_Outage_Duration_In_Days > 1 THEN 'High Risk'
+        WHEN Average_Outage_Duration_In_Days < 1 AND Average_Outage_Duration_In_Days > .5 THEN 'Medium Risk'
+        ELSE 'Low Risk'
+    END AS Risk_Classification
+FROM Avg_Outage_Table
+GROUP BY Participant_Code, Outage_Reason, Year
+ORDER BY Total_Number_Outage_Events DESC;
