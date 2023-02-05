@@ -1,9 +1,11 @@
-#Case Study: The American Energy Market Regulator (AEMR) is responsible for looking after the US domestic energy network. Recently, the AEMR management team has been
-noticing large number of energy providers that submitted outages over the 2016 and 2017. We will explore and clean the data to examine two main areas of concer: 1. energy
-stability and Market Outages and 2. energy losses and market reliability. 
+-Case Study: The American Energy Market Regulator (AEMR) is responsible for looking after the US domestic energy network. Recently, the AEMR management team has been
+noticing large number of energy providers that submitted outages over the 2016 and 2017. We will explore and clean the data to examine two main areas of concer: 1. 
+energy stability and Market Outages and 2. energy losses and market reliability. 
 
-#started by examining most common outage types, duartion and frequency
+-I will start by examining most common outage types, duartion and frequency to compare frequency and duration of each outage types. Then, we can dive further to see
+which energy provider have more outages than their peers while focusing on forced outages. 
 
+- Examing numbers of valid (when status is 'Approved') outage events in 2016 / 2017. 
 SELECT Count(*) as Total_Number_Outage_Events, Status, Reason
 FROM AEMR
 WHERE Status="Approved"
@@ -18,6 +20,7 @@ WHERE Status='Approved'
 GROUP BY Status, Reason
 ORDER BY Reason
 
+- Average duration in days for each approved outage types to find most common outage types
 SELECT Status, Reason, Count(*) as Total_Number_Outage_Events, 
     ROUND(AVG(ROUND((TIMESTAMPDIFF(MINUTE, Start_Time, End_Time)/60)/24,2)),2) AS Average_Outage_Duration_Time_Days, YEAR(Start_Time) as Year
 FROM AEMR
@@ -25,6 +28,7 @@ WHERE Status='Approved'
 GROUP BY Status, Reason, YEAR(Start_Time)
 ORDER BY YEAR(Start_Time), Reason
 
+- Monthly count of all approved outage types
 SELECT Status, Reason, Count(*) as Total_Number_Outage_Events, Month(Start_Time) as Month
 FROM AEMR
 WHERE Status='Approved'
@@ -39,23 +43,22 @@ WHERE Status='Approved'
 GROUP BY Status, Reason, Month(Start_Time)
 ORDER BY Reason, Month
 
-#How frequently do outages occur
+- Total number of all approved outage types that occured per month to find how frequently outages occur
 SELECT Status, Count(*) as Total_Number_Outage_Events, Month(Start_Time) as Month, Year(Start_Time) as Year
 FROM AEMR
 WHERE Status='Approved'
 GROUP BY Status, Month(Start_Time), Year(Start_Time)
 ORDER BY Year(Start_Time), Month(Start_Time)
 
-
-#Are there any energy providers
+- Count of all approved outage types for all participant codes for 2016 and 2017
 SELECT Count(*) as Total_Number_Outage_Events, Participant_Code, Status, Year(Start_Time) as Year
 FROM AEMR
 WHERE Status='Approved'
 GROUP BY Participant_Code, Status, Year(Start_Time)
 ORDER BY Year(Start_Time), Participant_Code
 
-
-#Are there any energy providers
+- Avg duration of all approved outage types for participant codes to find if there are any energy providers that have more outages than their peers which may indicate
+that these providers are unreliable
 SELECT Participant_Code, Status, Year(Start_Time) as Year, 
     ROUND(AVG(ROUND((TIMESTAMPDIFF(MINUTE, Start_Time, End_Time)/60)/24,2)),2) AS Average_Outage_Duration_Time_Days
 FROM AEMR
@@ -63,8 +66,7 @@ WHERE Status='Approved'
 GROUP BY Participant_Code, Status, Year(Start_Time)
 ORDER BY Year(Start_Time), CAST(Avg(CAST(TIMESTAMPDIFF(DAY,Start_Time,End_Time)AS DECIMAL(18,2))) AS DECIMAL(18,2)) DESC
 
-
-#Of the outage types in 2016 and 2017, what percent were Forced Outage
+- Of the outage types in 2016 and 2017, what percent were Forced Outage
 SELECT Count(*) as Total_Number_Outage_Events, Reason, Year(Start_Time) as Year
 FROM AEMR
 WHERE Reason='Forced'
@@ -72,7 +74,13 @@ WHERE Reason='Forced'
 GROUP BY Reason, Year(Start_Time)
 
 
-#Of the outage types in 2016 and 2017, what percent were Forced Outage
+
+-In a situation where the outages are forced, the energy provider may not be able to provide energy and is forced offline. If many energy providers are forced offline
+at the same time, it could lead to energy security risk taht AEMR needs to mitigate. To ensure this doesn't occur, the AEMR is intered in exploring percent of forced
+outages in 2016 and 2017, average duration of a forced outage, any increase in average duration of forced outages and etc. Comparing frequency and duration of forced
+outages can help determine which energy provider tends to be unreliable. 
+
+- Percent of forced outage in 2016 and 2017
 SELECT SUM(CASE WHEN Reason = 'Forced' THEN 1 ELSE 0 END) as Total_Number_Forced_Outage_Events, Count(*) as Total_Number_Outage_Events, 
     CAST((CAST(SUM(CASE WHEN Reason = 'Forced' THEN 1 ELSE 0 END)AS DECIMAL(18,2))/CAST(Count(*) AS DECIMAL(18,2)))*100 AS DECIMAL(18,2)) as Forced_Outage_Percentage, 
     Year(Start_Time) as Year
@@ -80,8 +88,7 @@ FROM AEMR
 WHERE Status = 'Approved'
 GROUP BY Year(Start_Time)
 
-
-#What is the average duration, and average energy lost
+- Average duration and average energy lost
 SELECT Status, Year(Start_Time) AS Year, ROUND(AVG(Outage_MW),2) AS Avg_Outage_MW_Loss, 
     Cast(ROUND(AVG(Cast(TIMESTAMPDIFF(MINUTE, Start_Time, End_Time) AS DECIMAL(18,2))),2) AS DECIMAL(18,2)) AS Average_Outage_Duration_Time_Minutes
 FROM AEMR
@@ -90,7 +97,7 @@ WHERE Status='Approved'
 GROUP BY Status, Year(Start_Time)
 ORDER BY Year(Start_Time);
 
-#What is the average duration, and average energy lost
+- Average duration of each individual outage event
 SELECT Status, Reason, Year(Start_Time) AS Year, ROUND(AVG(Outage_MW),2) AS Avg_Outage_MW_Loss,
     Cast(ROUND(AVG(Cast(TIMESTAMPDIFF(MINUTE, Start_Time, End_Time) AS DECIMAL(18,2))),2) AS DECIMAL(18,2)) AS Average_Outage_Duration_Time_Minutes
 FROM AEMR
@@ -98,8 +105,7 @@ WHERE Status='Approved'
 GROUP BY Status, Reason, Year(Start_Time)
 ORDER BY Year(Start_Time), Reason;
 
-
-#Which energy providers tend to be the most unreliable
+- Which energy providers tend to be the most unreliable
 SELECT Participant_Code, Status, Year(Start_Time) AS Year, ROUND(AVG(Outage_MW),2) AS Avg_Outage_MW_Loss, 
     ROUND(AVG(ROUND((TIMESTAMPDIFF(MINUTE, Start_Time, End_Time)/60)/24,2)),2) AS Average_Outage_Duration_Time_Minutes
 FROM AEMR
@@ -108,8 +114,7 @@ WHERE Status='Approved'
 GROUP BY Participant_Code, Status, Reason, Year(Start_Time)
 ORDER BY Year(Start_Time) ASC, ROUND(AVG(Outage_MW),2) DESC;
 
-
-#Which energy providers (facility code) tend to be the most unreliable
+- Which energy providers (facility code) tend to be the most unreliable
 SELECT Participant_Code, Facility_Code, Status, Year(Start_Time) AS Year, ROUND(AVG(Outage_MW),2) AS Avg_Outage_MW_Loss, 
     ROUND(SUM(Outage_MW),2) AS Summed_Energy_Lost
 FROM AEMR
