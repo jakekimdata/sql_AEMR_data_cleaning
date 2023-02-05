@@ -123,3 +123,8 @@ WHERE Status='Approved'
 GROUP BY Participant_Code, Facility_Code, Status, Year(Start_Time)
 ORDER BY Year(Start_Time) ASC, ROUND(SUM(Outage_MW),2) DESC;
 
+
+-Tableau visualization- 
+Please click below link for Tableau visualization of organized data:
+
+https://public.tableau.com/views/AEMRMarketInsights/Story1?:language=en-US&:display_count=n&:origin=viz_share_link
